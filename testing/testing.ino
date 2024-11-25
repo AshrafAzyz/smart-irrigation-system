@@ -331,5 +331,4 @@ void drawBox(int x1, int y1, int x2, int y2, String text, bool inverted) { // Fu
 
   // Reset text color for other elements
   display.setTextColor(SSD1306_WHITE);
-  display.display();
 }
