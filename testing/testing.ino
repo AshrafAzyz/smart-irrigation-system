@@ -33,6 +33,7 @@ const int moistureAnalogPin = A0;  // Analog input pin for the soil moisture sen
 // Variables for sensor readings and display
 int value;                        // Variable to store the ADC value
 float voltage;                    // Variable to store the calculated voltage
+int currentSelection = 0;         // Variable to track current selection (1 to 4)
 
 void setup() {
   // Initialize serial communication
@@ -64,27 +65,27 @@ void loop() {
     // Display the corresponding message based on the key pressed
     switch (key) {
     case '1':  // If '1' is pressed
+        currentSelection = 1;
         Page1();
         break;       
 
     case '2':  // If '2' is pressed
-      display.setCursor(0, 0);
-      display.setTextSize(1);
-      display.print("Moisture Value: ");
-      display.print(voltage);  // Display the moisture voltage
-      display.setCursor(0, 55);
-      display.print("Press * to go back to main menu");
-      break;
+        currentSelection = 2;
+        Page1();
+        break;
 
     case '3':  // If '3' is pressed
-      display.setCursor(0, 0);
-      display.setTextSize(1);
-      display.print("Exit");
-      display.setCursor(0, 55);
-      display.print("Press * to go back to main menu");
-      break;
+        currentSelection = 3;
+        Page1();
+        break;
+
+    case '4':  // If '4' is pressed
+        currentSelection = 4;
+        Page1();
+        break;
 
     case '*':
+      currentSelection = 0;
       mainPage();  // Show the main menu page again
       break;
 
@@ -154,28 +155,19 @@ void mainPage() {
   int startY = (SCREEN_HEIGHT - boxSize) / 2 + 10;  // Adjust Y position below the clock and date
   
   // Box 1
-  display.drawRect(startX, startY, boxSize, boxSize, SSD1306_WHITE);
-  display.setTextSize(2);  // Bold text size
-  display.setCursor(startX + (boxSize / 2) - 6, startY + (boxSize / 2) - 8);  // Adjust text position
-  display.print("1");
+  drawBox(startX, startY, startX + boxSize, startY + boxSize, "1", currentSelection == 1);
   display.setTextSize(1); 
   display.setCursor(startX - 10, startY + 24);
   display.print("Volume");
  
   // Box 2
-  display.setTextSize(2);
-  display.drawRect(startX + boxSize + margin, startY, boxSize, boxSize, SSD1306_WHITE);
-  display.setCursor(startX + boxSize + margin + (boxSize / 2) - 6, startY + (boxSize / 2) - 8);
-  display.print("2");
+  drawBox(startX + boxSize + margin, startY, startX + 2 * boxSize + margin, startY + boxSize, "2", currentSelection == 2);
   display.setTextSize(1); 
   display.setCursor(startX + 35, startY + 24);
   display.print("Index");
 
   // Box 3
-  display.setTextSize(2);
-  display.drawRect(startX + 2 * (boxSize + margin), startY, boxSize, boxSize, SSD1306_WHITE);
-  display.setCursor(startX + 2 * (boxSize + margin) + (boxSize / 2) - 6, startY + (boxSize / 2) - 8);
-  display.print("3");
+  drawBox(startX + 2 * (boxSize + margin), startY, startX + 3 * boxSize + 2 * margin, startY + boxSize, "3", currentSelection == 3);
   display.setTextSize(1); 
   display.setCursor(startX + 75, startY + 24);
   display.print("System");
@@ -204,10 +196,10 @@ void Page1() {
   display.print("4");
 
   // Draw square boxes with dynamic selection
-  drawBox(18, 15, 60, 35, "1000ml", true);  // Select if '1'
-  drawBox(68, 15, 110, 35, "2000ml", false); // Select if '2'
-  drawBox(18, 40, 60, 60, "3000ml", false); // Select if '3'
-  drawBox(68, 40, 110, 60, "Other", false); // Select if '4'
+  drawBox(18, 15, 60, 35, "1000ml", currentSelection == 1);  // Select if '1'
+  drawBox(68, 15, 110, 35, "2000ml", currentSelection == 2); // Select if '2'
+  drawBox(18, 40, 60, 60, "3000ml", currentSelection == 3); // Select if '3'
+  drawBox(68, 40, 110, 60, "Other", currentSelection == 4); // Select if '4'
 
   display.display();  // Update the display
 }
