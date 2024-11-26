@@ -11,7 +11,7 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Keypad matrix configuration
-const byte ROWS = 4;               // Four rows
+const byte ROWS = 4;               // Four rows configuration 
 const byte COLS = 3;               // Three columns
 char keys[ROWS][COLS] = {
   {'1', '2', '3'},
@@ -33,12 +33,6 @@ int value;                        // Variable to store the ADC value
 float voltage;                    // Variable to store the calculated voltage
 int currentSelection = 0;         // Variable to track current selection (1 to 4)
 int selectedOption = 0;           // Variable to store the selected option
-
-//Timer for clock
-unsigned long previousMillis = 0; // Variable to store the previous millis for timekeeping
-const long interval = 1000;       // Interval for updating time (1 second)
-int hour = 0, minute = 0, second = 0; // Variables to track time
-int day = 25, month = 11, year = 24;     // Variables to track date
 
 void setup() {
   // Initialize serial communication
@@ -65,15 +59,6 @@ void setup() {
 
 void loop() {
 
-  // PROBELM SIAKKK ANJINGGGGGGG
-  // Update time every second
-  //unsigned long currentMillis = millis();
-  //if (currentMillis - previousMillis >= interval) {
-    //previousMillis = currentMillis;
-    //updateDateTime();
-    //displayMainPage();
-  //}
-
   // Wait until a key is pressed
   char key = keypad.getKey();
   if (key) {
@@ -83,8 +68,8 @@ void loop() {
 
     // Handle page navigation based on key press
     switch (key) {
-      case '1':
-      case '2':
+      case '1': //Passing input to case 3
+      case '2': //Passing input 
       case '3':
         // Highlight the selected option and wait for confirmation
         selectedOption = key - '0';
@@ -137,62 +122,12 @@ void introAnimation() {
   delay(2000); // Keep the intro animation for 2 seconds
 }
 
-void updateDateTime() {
-  // Increment the time
-  second++;
-  if (second >= 60) {
-    second = 0;
-    minute++;
-    if (minute >= 60) {
-      minute = 0;
-      hour++;
-      if (hour >= 24) {
-        hour = 0;
-        day++;
-        if ((month == 2 && day > 28) ||
-            (month == 4 || month == 6 || month == 9 || month == 11) && day > 30 ||
-            day > 31) {
-          day = 1;
-          month++;
-          if (month > 12) {
-            month = 1;
-            year++;
-          }
-        }
-      }
-    }
-  }
-}
 
 void displayMainPage() {
   // Clear the display and set up the main page UI
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-
-  // Display current time (HH:MM:SS)
-  display.setCursor(18, 0);
-  display.setTextSize(2);
-  if (hour < 10) display.print('0');
-  display.print(hour);
-  display.print(':');
-  if (minute < 10) display.print('0');
-  display.print(minute);
-  display.print(':');
-  if (second < 10) display.print('0');
-  display.print(second);
-
-  // Display current date (DD-MM-YY)
-  display.setCursor(42, 20);
-  display.setTextSize(1);
-  if (day < 10) display.print('0');
-  display.print(day);
-  display.print('-');
-  if (month < 10) display.print('0');
-  display.print(month);
-  display.print('-');
-  if (year < 10) display.print('0');
-  display.print(year);
 
   // Draw three text boxes representing the options
   int boxY = 30;
@@ -270,7 +205,7 @@ void handleMainPageConfirmation() {
             handlePage1Input();
             return;
           case 2:
-            displayPage("Page 2");
+            displayPage2();
             return;
           case 3:
             displayPage("Page 3");
@@ -395,6 +330,34 @@ void handlePage1Input() {
     }
   }
 }
+
+void displayPage2() {
+  while (true) {
+    // Read the sensor value and convert to voltage
+    int sensorValue = analogRead(moistureAnalogPin); // Replace with your analog pin
+    float voltage = (sensorValue / 1023.0) * 5.0;    // Assuming a 5V reference
+
+    // Clear the display and show the sensor voltage
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.print("Sensor Value:");
+    display.setCursor(80, 0);
+    display.print(voltage, 2); // Display voltage with 2 decimal points
+    display.print(" V");
+    display.display();
+
+    // Check for user input to exit Page 2
+    char key = keypad.getKey();
+    if (key == '*') {
+      // Return to the main page if '*' is pressed
+      displayMainPage();
+      return;
+    }
+  }
+}
+
 
 // New function to handle the logic when '#' is pressed
 void processSelectedOption() {
