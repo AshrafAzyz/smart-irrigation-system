@@ -431,10 +431,37 @@ void processSelectedOption() {
   }
 }
 
-// Function to handle dispensing
+// Function to handle dispensing with a countdown
 void dispense(int durationSeconds) {
   // Activate dispensing mechanism
-  digitalWrite(relayPin, HIGH); // Replace `dispensePin` with your actual pin connected to the dispensing mechanism
-  delay(durationSeconds * 1000);  // Wait for the specified duration
-  digitalWrite(relayPin, LOW); // Stop dispensing
+  digitalWrite(relayPin, HIGH); // Start dispensing
+
+  for (int remainingTime = durationSeconds; remainingTime > 0; remainingTime--) {
+    // Clear the display and show the countdown
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 20);
+    display.print("Dispensing...");
+    display.setCursor(0, 40);
+    display.print("Time: ");
+    display.print(remainingTime);
+    display.print("s");
+    display.display();
+
+    delay(1000); // Wait for 1 second
+  }
+
+  // Stop dispensing
+  digitalWrite(relayPin, LOW);
+
+  // Show completion message
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 20);
+  display.print("Completed!");
+  display.display();
+
+  delay(2000); // Pause for 2 seconds to show the completion message
 }
