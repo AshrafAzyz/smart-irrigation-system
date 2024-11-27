@@ -3,7 +3,6 @@
 #include <Adafruit_GFX.h>            // OLED display library
 #include <Adafruit_SSD1306.h>
 #include <Keypad.h>                  // Keypad library
-#include <Fonts/FreeMono9pt7b.h>     // Fonts Library
 
 // OLED display configuration
 #define SCREEN_WIDTH 128
@@ -54,11 +53,11 @@ void setup() {
   display.display();
 
   // Display the main page UI
+  //introAnimation();
   displayMainPage();
 }
 
 void loop() {
-
   // Wait until a key is pressed
   char key = keypad.getKey();
   if (key) {
@@ -93,12 +92,32 @@ void loop() {
   // Control the relay based on the sensor state
   if (sensorValue == LOW) { 
     // Soil is wet, turn off the pump
-    
     digitalWrite(relayPin, LOW);    
   } else { 
     // Soil is dry, turn on the pump
     digitalWrite(relayPin, HIGH);   
   }
+}
+
+void introAnimation() {
+  // Clear display
+  display.clearDisplay();
+  
+  // Display "Irrigation System" with larger text
+  display.setTextSize(2); // Large text size for title
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println(F("Irrigation"));
+  display.setCursor(0, 20);
+  display.println(F("System"));
+
+  // Display "powered by AFA" with smaller text
+  display.setTextSize(1); // Smaller text size for the subheading
+  display.setCursor(0, 50);
+  display.println(F("powered by AFA"));
+
+  display.display(); // Update the display
+  delay(2000); // Keep the intro animation for 2 seconds
 }
 
 void displayMainPage() {
@@ -133,7 +152,7 @@ void displayMainPage() {
   display.println(F("3"));
   display.setTextSize(1);
   display.setCursor(97, boxY + 25);
-  display.println(F("Pump"));
+  display.println(F("Info"));
 
   display.display(); // Update the display with the new content
 }
@@ -229,16 +248,19 @@ void displayPage1() {
   display.setCursor(15, 40);
   display.println(F("300ml"));
 
-  // Option 4
+  // Option 4 (Custom)
   display.drawRect(64, 36, 60, 16, SSD1306_WHITE);
-  display.setCursor(79, 40);
-  display.println(F("400ml"));
+  display.setCursor(75, 40);
+  display.println(F("Custom"));
 
   display.display(); // Update the display with the new content
 }
 
+
 void handlePage1Input() {
   selectedOption = 0; // Reset selected option
+  bool hasSelection = false; // Track if an option is currently selected
+
   while (true) {
     // Wait for user input on Page 1
     char key = keypad.getKey();
@@ -247,55 +269,72 @@ void handlePage1Input() {
       Serial.print(F("Page 1 - Key Pressed: "));
       Serial.println(key);
 
-      // Clear the display and redraw Page 1 UI with the selected box highlighted
-      displayPage1();
-      switch (key) {
-        case '1':
-          selectedOption = 1;
-          display.fillRect(0, 16, 60, 16, SSD1306_WHITE);
-          display.setTextColor(SSD1306_BLACK);
-          display.setCursor(15, 20);
-          display.println(F("100ml"));
-          display.setTextColor(SSD1306_WHITE);
-          display.display();
-          break;
-        case '2':
-          selectedOption = 2;
-          display.fillRect(64, 16, 60, 16, SSD1306_WHITE);
-          display.setTextColor(SSD1306_BLACK);
-          display.setCursor(79, 20);
-          display.println(F("200ml"));
-          display.setTextColor(SSD1306_WHITE);
-          display.display();
-          break;
-        case '3':
-          selectedOption = 3;
-          display.fillRect(0, 36, 60, 16, SSD1306_WHITE);
-          display.setTextColor(SSD1306_BLACK);
-          display.setCursor(15, 40);
-          display.println(F("300ml"));
-          display.setTextColor(SSD1306_WHITE);
-          display.display();
-          break;
-        case '4':
-          selectedOption = 4;
-          display.fillRect(64, 36, 60, 16, SSD1306_WHITE);
-          display.setTextColor(SSD1306_BLACK);
-          display.setCursor(79, 40);
-          display.println(F("400ml"));
-          display.setTextColor(SSD1306_WHITE);
-          display.display();
-          break;
-        case '#':
-          processSelectedOption(); // Call the new function
-            return;
-          break;
-        case '*':
-          // Return to main page
+      if (key == '#') {
+        // Confirm selection and proceed
+        if (hasSelection) {
+          switch (selectedOption) {
+            case 1:
+              dispense(3); // Dispense 100 ml (~3 seconds)
+              return;
+            case 2:
+              dispense(6); // Dispense 200 ml (~6 seconds)
+              return;
+            case 3:
+              dispense(9); // Dispense 300 ml (~9 seconds)
+              return;
+            case 4:
+              handleCustomVolumeInput(); // Call the custom volume input function
+              return;
+          }
+        }
+      } else if (key == '*') {
+        // Handle clearing selection or returning to the main page
+        if (hasSelection) {
+          // Clear selection and refresh the page
+          hasSelection = false;
+          selectedOption = 0;
+          displayPage1(); // Redraw the Page 1 UI without any selection
+        } else {
+          // If no selection, return to the main page
           displayMainPage();
           return;
-        default:
-          break;
+        }
+      } else if (key >= '1' && key <= '4') {
+        // Allow changing selection without leaving the page
+        selectedOption = key - '0';
+        hasSelection = true; // Mark that an option is selected
+        displayPage1(); // Refresh UI
+        switch (selectedOption) {
+          case 1:
+            display.fillRect(0, 16, 60, 16, SSD1306_WHITE);
+            display.setTextColor(SSD1306_BLACK);
+            display.setCursor(15, 20);
+            display.println(F("100ml"));
+            display.setTextColor(SSD1306_WHITE);
+            break;
+          case 2:
+            display.fillRect(64, 16, 60, 16, SSD1306_WHITE);
+            display.setTextColor(SSD1306_BLACK);
+            display.setCursor(79, 20);
+            display.println(F("200ml"));
+            display.setTextColor(SSD1306_WHITE);
+            break;
+          case 3:
+            display.fillRect(0, 36, 60, 16, SSD1306_WHITE);
+            display.setTextColor(SSD1306_BLACK);
+            display.setCursor(15, 40);
+            display.println(F("300ml"));
+            display.setTextColor(SSD1306_WHITE);
+            break;
+          case 4:
+            display.fillRect(64, 36, 60, 16, SSD1306_WHITE);
+            display.setTextColor(SSD1306_BLACK);
+            display.setCursor(75, 40);
+            display.println(F("Custom"));
+            display.setTextColor(SSD1306_WHITE);
+            break;
+        }
+        display.display(); // Update the display
       }
     }
   }
@@ -305,17 +344,32 @@ void displayPage2() {
   while (true) {
     // Read the sensor value and convert to voltage
     int sensorValue = analogRead(moistureAnalogPin); // Replace with your analog pin
-    float voltage = (sensorValue / 1023.0) * 5.0;    // 5V reference
+    float voltage = (sensorValue / 1023.0) * 3.3;    // 3.3 reference
 
     // Clear the display and show the sensor voltage
     display.clearDisplay();
     display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.print(F("Sensor Value:"));
-    display.setCursor(80, 0);
+    display.fillRect(0,0,128,24,SSD1306_WHITE );
+
+    display.setTextColor(SSD1306_BLACK);
+    display.setCursor(8, 2);
+    display.print(F("Sensor Value: "));
+    display.setCursor(86, 2);
     display.print(voltage, 2); // Display voltage with 2 decimal points
     display.print(F(" V"));
+    
+    // Display soil condition based on voltage
+    display.setCursor(28, 12);
+    if (voltage < 1.5) {
+      display.println(F("Soil is normal"));
+      smileFace();
+    } else if (voltage >= 1.5) {
+      display.println(F("Soil is dry"));
+      sadFace();
+    } else {
+      display.println(F("Invalid voltage"));
+    }
+    
     display.display();
 
     // Check for user input to exit Page 2
@@ -325,41 +379,6 @@ void displayPage2() {
       displayMainPage();
       return;
     }
-  }
-}
-
-// New function to handle the logic when '#' is pressed
-void processSelectedOption() {
-  if (selectedOption != 0) {
-    // Display confirmation message
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 20);
-    display.print(F("Dispensing "));
-    display.print(selectedOption);
-    display.display();
-
-    // Dispense based on the selected option
-    switch (selectedOption) {
-      case 1:
-        dispense(3); // Dispense 100 ml (~3 seconds)
-        break;
-      case 2:
-        dispense(6); // Dispense 200 ml (~6 seconds)
-        break;
-      case 3:
-        dispense(9); // Dispense 300 ml (~9 seconds)
-        break;
-      case 4:
-        dispense(12); // Dispense 400 ml (~12 seconds)
-        break;
-      default:
-        break;
-    }
-
-    delay(2000); // Pause to display the confirmation
-    displayMainPage(); // Return to the main page after dispensing
   }
 }
 
@@ -373,9 +392,9 @@ void dispense(int durationSeconds) {
     display.clearDisplay();
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 20);
+    display.setCursor(0, 10);
     display.print(F("Dispensing..."));
-    display.setCursor(0, 40);
+    display.setCursor(0, 30);
     display.print(F("Time: "));
     display.print(remainingTime);
     display.print(F("s"));
@@ -396,6 +415,7 @@ void dispense(int durationSeconds) {
   display.display();
 
   delay(2000); // Pause for 2 seconds to show the completion message
+  displayMainPage();
 }
 
 void displayPage3() {
@@ -403,14 +423,23 @@ void displayPage3() {
   display.clearDisplay();
   display.setTextSize(1); // Smaller text size for more content
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
+  display.setCursor(2, 0);
+
+  display.println(F("Soil Monitoring Sys."));
 
   // Add information about the system
-  display.println(F("Soil Monitoring Sys."));
-  display.println(F("---------------------"));
+  display.setTextColor(SSD1306_BLACK);
+  display.fillRect(0,15,128,13,SSD1306_WHITE);
+  display.setCursor(1, 19);
   display.println(F("Dry soil harms plant"));
+
+  display.fillRect(0,32,128,13,SSD1306_WHITE);
+  display.setCursor(1, 36);
   display.println(F("Ensure enough water"));
-  display.println(F("to keep it healthy"));
+  
+  display.fillRect(0,49,128,13,SSD1306_WHITE);
+  display.setCursor(1, 53);
+  display.println(F("Wet soil, happy plant"));
 
   display.display();
 
@@ -425,3 +454,101 @@ void displayPage3() {
   }
 }
 
+void handleCustomVolumeInput() {
+  int customVolume = 0; // Variable to store user input
+  bool isConfirmed = false;
+
+  while (!isConfirmed) {
+    // Clear the display and prompt user for input
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println(F("Enter volume (ml):"));
+    display.setCursor(0, 20);
+    display.print(F("Current: "));
+    display.print(customVolume);
+    display.println(F(" ml"));
+    display.display();
+
+    char key = keypad.getKey();
+    if (key) {
+      if (key >= '0' && key <= '9') {
+        int digit = key - '0';
+        // Only append the digit if the current number has fewer than 4 digits
+        if (customVolume < 1000) { // Less than 4 digits
+          customVolume = customVolume * 10 + digit;
+        } else {
+          // If it would exceed 4 digits, reset to 0
+          customVolume = 0;
+        }
+      } else if (key == '*') {
+        // Clear input or go back to Page 1
+        if (customVolume == 0) {
+          // If input is already 0, return to Page 1
+          displayPage1();
+          handlePage1Input();
+          return;
+        } else {
+          // Clear the input if a value has been entered
+          customVolume = 0;
+        }
+      } else if (key == '#') {
+        // Confirm input
+        isConfirmed = true;
+      }
+
+      // Debugging log for monitoring customVolume
+      Serial.print(F("Current custom Volume: "));
+      Serial.println(customVolume);
+    }
+  }
+
+  // Calculate dispensing time based on the pump's flow rate
+  // Pump flow rate: 120 L/H = 120,000 ml/hour = 120,000 / 3600 ml/second
+  const float flowRatePerSecond = 120000.0 / 3600.0; // ~33.33 ml/second
+  int dispensingTime = customVolume / flowRatePerSecond; // Time in seconds
+
+  // Call the dispensing function with calculated time
+  dispense(dispensingTime);
+}
+
+// Function to display a smiling face
+void smileFace() {
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  // Draw a circle for the face
+  display.drawCircle(64, 45, 18, SSD1306_WHITE);  // Center (64, 32), radius 30
+
+  // Draw the eyes
+  display.fillCircle(55, 40, 2, SSD1306_WHITE);  // Left eye
+  display.fillCircle(73, 40, 2, SSD1306_WHITE);  // Right eye
+
+  // Draw a smiling mouth (top half of a circle pointing upward)
+  for (int i = 0; i < 1; i++) {  // Adjust the thickness by looping
+  display.drawCircleHelper(64, 45, 10 - i, 0b00001100, SSD1306_WHITE);  // Bottom half (centered at 180 degrees)
+  }
+
+  display.display();
+}
+
+// Function to display a sad face
+void sadFace() {
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  // Draw a circle for the face
+  display.drawCircle(64, 45, 18, SSD1306_WHITE);  // Center (64, 32), radius 30
+
+  // Draw the eyes
+  display.fillCircle(55, 40, 2, SSD1306_WHITE);  // Left eye
+  display.fillCircle(73, 40, 2, SSD1306_WHITE);  // Right eye
+
+  // Draw a sad mouth (bottom half of a circle)
+  for (int i = 0; i < 1; i++) {  // Adjust the thickness by looping
+    display.drawCircleHelper(64, 55, 8 - i, 0b00000011, SSD1306_WHITE);  // Bottom half (centered at 180 degrees)
+  }
+
+  display.display();
+}
