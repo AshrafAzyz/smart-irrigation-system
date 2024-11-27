@@ -134,7 +134,7 @@ void displayMainPage() {
   display.println(F("3"));
   display.setTextSize(1);
   display.setCursor(97, boxY + 25);
-  display.println(F("Pump"));
+  display.println(F("Info"));
 
   display.display(); // Update the display with the new content
 }
@@ -326,8 +326,6 @@ void handlePage1Input() {
 }
 
 
-
-
 void displayPage2() {
   while (true) {
     // Read the sensor value and convert to voltage
@@ -354,44 +352,6 @@ void displayPage2() {
     }
   }
 }
-
-/*
-// New function to handle the logic when '#' is pressed
-void processSelectedOption() {
-  if (selectedOption != 0) {
-    // Display confirmation message
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 20);
-    display.print(F("Dispensing "));
-    if (selectedOption == 4) {
-      display.print(F("Custom"));
-    } else {
-      display.print(selectedOption);
-    }
-    display.display();
-
-    // Dispense based on the selected option
-    switch (selectedOption) {
-      case 1:
-        dispense(3); // Dispense 100 ml (~3 seconds)
-        break;
-      case 2:
-        dispense(6); // Dispense 200 ml (~6 seconds)
-        break;
-      case 3:
-        dispense(9); // Dispense 300 ml (~9 seconds)
-        break;
-      default:
-        break;
-    }
-
-    delay(2000); // Pause to display the confirmation
-    displayMainPage(); // Return to the main page after dispensing
-  }
-}
-*/
 
 // Function to handle dispensing with a countdown
 void dispense(int durationSeconds) {
@@ -472,19 +432,29 @@ void handleCustomVolumeInput() {
     display.print(customVolume);
     display.println(F(" ml"));
     display.setCursor(0, 40);
-    display.println(F("# to confirm, * to cancel"));
+    display.println(F("# to confirm, * to clear/back"));
     display.display();
 
     char key = keypad.getKey();
     if (key) {
       if (key >= '0' && key <= '9') {
-        // Append digit to custom volume
+        // Append the digit and check for 5-digit number
         customVolume = customVolume * 10 + (key - '0');
+        if (customVolume > 9999) {
+          // Reset to 0 if it becomes a 5-digit number
+          customVolume = 0;
+        }
       } else if (key == '*') {
-        // Cancel input and return to Page 1
-        displayPage1();
-        handlePage1Input();
-        return;
+        // Clear input or go back to Page 1
+        if (customVolume == 0) {
+          // If input is already 0, return to Page 1
+          displayPage1();
+          handlePage1Input();
+          return;
+        } else {
+          // Clear the input if a value has been entered
+          customVolume = 0;
+        }
       } else if (key == '#') {
         // Confirm input
         isConfirmed = true;
@@ -500,3 +470,5 @@ void handleCustomVolumeInput() {
   // Call the dispensing function with calculated time
   dispense(dispensingTime);
 }
+
+
