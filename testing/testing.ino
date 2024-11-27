@@ -1,7 +1,7 @@
 // Libraries
-#include <Wire.h>
+#include <EEPROM.h>                  // EEPROM ibrary
 #include <Adafruit_GFX.h>            // OLED display library
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_SSD1306.h>        // OLED display library
 #include <Keypad.h>                  // Keypad library
 
 // OLED display configuration
@@ -9,6 +9,18 @@
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+// Adafruit_SSD1306 display object created
+extern Adafruit_SSD1306 display;
+
+// Struct to hold clock data
+struct Clock {
+  int hours;
+  int minutes;
+  int seconds;
+  int day;
+  int month;
+  int year;
+};
 
 // Keypad matrix configuration
 const byte ROWS = 4;               // Four rows configuration 
@@ -34,6 +46,17 @@ float voltage;                    // Variable to store the calculated voltage
 int currentSelection = 0;         // Variable to track current selection (1 to 4)
 int selectedOption = 0;           // Variable to store the selected option
 
+// Global variables for time tracking
+unsigned long previousMillis = 0;
+const unsigned long interval = 1000; // Interval to update the clock (1 second)
+int day = 27;
+int month = 11;
+int year = 2024; // Settings starting day/month/year manually
+
+int hours = 0;
+int minutes = 0;
+int seconds = 0;
+
 void setup() {
   // Initialize serial communication
   Serial.begin(115200);
@@ -54,10 +77,15 @@ void setup() {
 
   // Display the main page UI
   //introAnimation();
-  displayMainPage();
 }
 
 void loop() {
+
+  //Displaying main page
+  displayMainPage();
+  // Always update the clock
+  updateClock();
+
   // Wait until a key is pressed
   char key = keypad.getKey();
   if (key) {
@@ -121,12 +149,34 @@ void introAnimation() {
 }
 
 void displayMainPage() {
+
   // Clear the display and set up the main page UI
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(25, 0);
-  display.println(F("System Active"));
+
+  //Display Clock
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(35, 0);
+  
+  // Display time in HH:MM format
+  display.print((hours < 10) ? "0" : ""); // Add leading zero for single-digit hours
+  display.print(hours);
+  display.print(":");
+  display.print((minutes < 10) ? "0" : ""); // Add leading zero for single-digit minutes
+  display.print(minutes);
+
+  // Display the current date in DD/MM/YYYY format
+  display.setTextSize(1);
+  display.setCursor(35, 20);
+  display.print((day < 10) ? "0" : "");
+  display.print(day);
+  display.print("/");
+  display.print((month < 10) ? "0" : "");
+  display.print(month);
+  display.print("/");
+  display.print(year);
 
   // Draw three text boxes representing the options
   int boxY = 30;
@@ -158,6 +208,7 @@ void displayMainPage() {
 }
 
 void highlightMainOption(int option) {
+
   displayMainPage(); // Clear any previous highlights
   int boxY = 30;
   switch (option) {
@@ -181,7 +232,7 @@ void highlightMainOption(int option) {
       display.setTextSize(2);
       display.setCursor(102, boxY + 4);
       display.println(F("3"));
-      break;
+      break; 
   }
   display.setTextColor(SSD1306_WHITE);
   display.display();
@@ -189,6 +240,8 @@ void highlightMainOption(int option) {
 
 void handleMainPageConfirmation() {
   while (true) {
+    //Continue update clock in loop
+    updateClock();
     // Wait for user input on the main page
     char key = keypad.getKey();
     if (key) {
@@ -256,7 +309,6 @@ void displayPage1() {
   display.display(); // Update the display with the new content
 }
 
-
 void handlePage1Input() {
   selectedOption = 0; // Reset selected option
   bool hasSelection = false; // Track if an option is currently selected
@@ -286,6 +338,8 @@ void handlePage1Input() {
               handleCustomVolumeInput(); // Call the custom volume input function
               return;
           }
+        // Save the current time to EEPROM when # is pressed
+        saveClockToEEPROM();
         }
       } else if (key == '*') {
         // Handle clearing selection or returning to the main page
@@ -382,42 +436,6 @@ void displayPage2() {
   }
 }
 
-// Function to handle dispensing with a countdown
-void dispense(int durationSeconds) {
-  // Activate dispensing mechanism
-  digitalWrite(relayPin, HIGH); // Start dispensing
-
-  for (int remainingTime = durationSeconds; remainingTime > 0; remainingTime--) {
-    // Clear the display and show the countdown
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 10);
-    display.print(F("Dispensing..."));
-    display.setCursor(0, 30);
-    display.print(F("Time: "));
-    display.print(remainingTime);
-    display.print(F("s"));
-    display.display();
-
-    delay(1000); // Wait for 1 second
-  }
-
-  // Stop dispensing
-  digitalWrite(relayPin, LOW);
-
-  // Show completion message
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 20);
-  display.print(F("Completed!"));
-  display.display();
-
-  delay(2000); // Pause for 2 seconds to show the completion message
-  displayMainPage();
-}
-
 void displayPage3() {
   // Display static information about the system
   display.clearDisplay();
@@ -427,19 +445,8 @@ void displayPage3() {
 
   display.println(F("Soil Monitoring Sys."));
 
-  // Add information about the system
-  display.setTextColor(SSD1306_BLACK);
-  display.fillRect(0,15,128,13,SSD1306_WHITE);
-  display.setCursor(1, 19);
-  display.println(F("Dry soil harms plant"));
-
-  display.fillRect(0,32,128,13,SSD1306_WHITE);
-  display.setCursor(1, 36);
-  display.println(F("Ensure enough water"));
-  
-  display.fillRect(0,49,128,13,SSD1306_WHITE);
-  display.setCursor(1, 53);
-  display.println(F("Wet soil, happy plant"));
+  display.setCursor(0,20);
+  printSavedClock();
 
   display.display();
 
@@ -513,8 +520,127 @@ void handleCustomVolumeInput() {
   dispense(dispensingTime);
 }
 
-// Function to display a smiling face
-void smileFace() {
+void dispense(int durationSeconds) { // Function to handle dispensing with a countdown
+  // Activate dispensing mechanism
+  digitalWrite(relayPin, HIGH); // Start dispensing
+
+  for (int remainingTime = durationSeconds; remainingTime > 0; remainingTime--) {
+    // Clear the display and show the countdown
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 10);
+    display.print(F("Dispensing..."));
+    display.setCursor(0, 30);
+    display.print(F("Time: "));
+    display.print(remainingTime);
+    display.print(F("s"));
+    display.display();
+
+    delay(1000); // Wait for 1 second
+  }
+
+  // Stop dispensing
+  digitalWrite(relayPin, LOW);
+
+  // Show completion message
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 20);
+  display.print(F("Completed!"));
+  display.display();
+
+  delay(2000); // Pause for 2 seconds to show the completion message
+  displayMainPage();
+}
+
+int getDaysInMonth(int month, int year) { //
+  switch (month) {
+    case 1: case 3: case 5: case 7: case 8: case 10: case 12: // 31 days
+      return 31;
+    case 4: case 6: case 9: case 11: // 30 days
+      return 30;
+    case 2: // February
+      if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
+        return 29; // Leap year
+      } else {
+        return 28;
+      }
+    default:
+      return 30; // Default fallback, shouldn't happen
+  }
+}
+
+void updateClock(){ // Function to update clock time using TIMER
+  // Update the clock display every second
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    // Save the last time the clock was updated
+    previousMillis = currentMillis;
+
+    // Increment seconds
+    seconds++;
+    if (seconds >= 60) {
+      seconds = 0;
+      minutes++;
+    }
+    if (minutes >= 60) {
+      minutes = 0;
+      hours++;
+    }
+    if (hours >= 24) {
+      hours = 0;
+    }
+    if (day > getDaysInMonth(month, year)) {
+      day = 1;
+      month++;
+    }
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+}
+
+// Function to save the current clock data to EEPROM
+void saveClockToEEPROM() {
+  Clock currentClock = {hours, minutes, seconds, day, month, year};
+  EEPROM.put(0, currentClock);
+}
+
+// Function to print the saved clock data on the OLED display
+void printSavedClock() {
+  Clock savedClock;
+  EEPROM.get(0, savedClock);
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.print(F("Time: "));
+  display.print((savedClock.hours < 10) ? "0" : "");
+  display.print(savedClock.hours);
+  display.print(":");
+  display.print((savedClock.minutes < 10) ? "0" : "");
+  display.print(savedClock.minutes);
+  display.print(":");
+  display.print((savedClock.seconds < 10) ? "0" : "");
+  display.print(savedClock.seconds);
+  display.println();
+  display.print(F("Date: "));
+  display.print((savedClock.day < 10) ? "0" : "");
+  display.print(savedClock.day);
+  display.print("/");
+  display.print((savedClock.month < 10) ? "0" : "");
+  display.print(savedClock.month);
+  display.print("/");
+  display.println(savedClock.year);
+
+  display.display();
+}
+
+void smileFace() { // Function to display a smiling face
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
 
@@ -533,8 +659,7 @@ void smileFace() {
   display.display();
 }
 
-// Function to display a sad face
-void sadFace() {
+void sadFace() { // Function to display a sad face
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
 
