@@ -441,11 +441,13 @@ void displayPage3() {
   display.clearDisplay();
   display.setTextSize(1); // Smaller text size for more content
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(2, 0);
+  display.setCursor(0, 0);
 
   display.println(F("Soil Monitoring Sys."));
+  display.setCursor(0, 25);
+  display.println(F("Last Manually Pump: "));
 
-  display.setCursor(0,20);
+  display.setCursor(0,40);
   printSavedClock();
 
   display.display();
@@ -613,32 +615,35 @@ void saveClockToEEPROM() {
 void printSavedClock() {
   Clock savedClock;
   EEPROM.get(0, savedClock);
-
-  display.clearDisplay();
   display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
-  display.print(F("Time: "));
-  display.print((savedClock.hours < 10) ? "0" : "");
-  display.print(savedClock.hours);
-  display.print(":");
-  display.print((savedClock.minutes < 10) ? "0" : "");
-  display.print(savedClock.minutes);
-  display.print(":");
-  display.print((savedClock.seconds < 10) ? "0" : "");
-  display.print(savedClock.seconds);
-  display.println();
-  display.print(F("Date: "));
-  display.print((savedClock.day < 10) ? "0" : "");
-  display.print(savedClock.day);
-  display.print("/");
-  display.print((savedClock.month < 10) ? "0" : "");
-  display.print(savedClock.month);
-  display.print("/");
-  display.println(savedClock.year);
+
+  // Check if the EEPROM data is valid before displaying
+  if (savedClock.year > 2000) {
+    display.print(F("Time: "));
+    display.print((savedClock.hours < 10) ? "0" : "");
+    display.print(savedClock.hours);
+    display.print(":");
+    display.print((savedClock.minutes < 10) ? "0" : "");
+    display.print(savedClock.minutes);
+    display.print(":");
+    display.print((savedClock.seconds < 10) ? "0" : "");
+    display.print(savedClock.seconds);
+    display.println();
+    display.print(F("Date: "));
+    display.print((savedClock.day < 10) ? "0" : "");
+    display.print(savedClock.day);
+    display.print("/");
+    display.print((savedClock.month < 10) ? "0" : "");
+    display.print(savedClock.month);
+    display.print("/");
+    display.println(savedClock.year);
+  } else {
+    display.println(F("No valid data"));
+  }
 
   display.display();
 }
+
 
 void smileFace() { // Function to display a smiling face
   display.setTextSize(1);
