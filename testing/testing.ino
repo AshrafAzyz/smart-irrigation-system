@@ -3,6 +3,7 @@
 #include <Adafruit_GFX.h>            // OLED display library
 #include <Adafruit_SSD1306.h>
 #include <Keypad.h>                  // Keypad library
+#include <Fonts/FreeMono9pt7b.h>     // Fonts Library
 
 // OLED display configuration
 #define SCREEN_WIDTH 128
@@ -53,7 +54,6 @@ void setup() {
   display.display();
 
   // Display the main page UI
-  //introAnimation();
   displayMainPage();
 }
 
@@ -63,7 +63,7 @@ void loop() {
   char key = keypad.getKey();
   if (key) {
     // Print the key to the serial monitor
-    Serial.print("Key Pressed: ");
+    Serial.print(F("Key Pressed: "));
     Serial.println(key);
 
     // Handle page navigation based on key press
@@ -85,7 +85,7 @@ void loop() {
     }
   }
 
-  // Other logic for soil moisture sensor and relay control
+  //Soil moisture sensor and relay control reading 
   int sensorValue = digitalRead(waterSensorPin); // FOR CONDITION
   value = analogRead(moistureAnalogPin);  // Read the ADC value FOR OLED
   voltage = map(value, 0, 1023, 0, 3300) / 1000.0; // Convert ADC value to voltage
@@ -101,59 +101,39 @@ void loop() {
   }
 }
 
-void introAnimation() {
-  // Clear display
-  display.clearDisplay();
-  
-  // Display "Irrigation System" with larger text
-  display.setTextSize(2); // Large text size for title
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
-  display.println("Irrigation");
-  display.setCursor(0, 20);
-  display.println("System");
-
-  // Display "powered by AFA" with smaller text
-  display.setTextSize(1); // Smaller text size for the subheading
-  display.setCursor(0, 50);
-  display.println("powered by AFA");
-
-  display.display(); // Update the display
-  delay(2000); // Keep the intro animation for 2 seconds
-}
-
-
 void displayMainPage() {
   // Clear the display and set up the main page UI
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
+  display.setCursor(25, 0);
+  display.println(F("System Active"));
 
   // Draw three text boxes representing the options
   int boxY = 30;
   display.setTextSize(2);
   display.drawRect(0, boxY, 40, 22, SSD1306_WHITE);
   display.setCursor(14, boxY + 4);
-  display.println("1");
+  display.println(F("1"));
   display.setTextSize(1);
   display.setCursor(3, boxY + 25);
-  display.println("Volume");
+  display.println(F("Volume"));
   
   display.setTextSize(2);
   display.drawRect(44, boxY, 40, 22, SSD1306_WHITE);
   display.setCursor(58, boxY + 4);
-  display.println("2");
+  display.println(F("2"));
   display.setTextSize(1);
   display.setCursor(50, boxY + 25);
-  display.println("Level");
+  display.println(F("Level"));
 
   display.setTextSize(2);
   display.drawRect(88, boxY, 40, 22, SSD1306_WHITE);
   display.setCursor(102, boxY + 4);
-  display.println("3");
+  display.println(F("3"));
   display.setTextSize(1);
   display.setCursor(97, boxY + 25);
-  display.println("Pump");
+  display.println(F("Pump"));
 
   display.display(); // Update the display with the new content
 }
@@ -167,21 +147,21 @@ void highlightMainOption(int option) {
       display.setTextColor(SSD1306_BLACK);
       display.setTextSize(2);
       display.setCursor(14, boxY + 4);
-      display.println("1");
+      display.println(F("1"));
       break;
     case 2:
       display.fillRect(44, boxY, 40, 22, SSD1306_WHITE);
       display.setTextColor(SSD1306_BLACK);
       display.setTextSize(2);
       display.setCursor(58, boxY + 4);
-      display.println("2");
+      display.println(F("2"));
       break;
     case 3:
       display.fillRect(88, boxY, 40, 22, SSD1306_WHITE);
       display.setTextColor(SSD1306_BLACK);
       display.setTextSize(2);
       display.setCursor(102, boxY + 4);
-      display.println("3");
+      display.println(F("3"));
       break;
   }
   display.setTextColor(SSD1306_WHITE);
@@ -194,7 +174,7 @@ void handleMainPageConfirmation() {
     char key = keypad.getKey();
     if (key) {
       // Print the key to the serial monitor
-      Serial.print("Main Page - Key Pressed: ");
+      Serial.print(F("Main Page - Key Pressed: "));
       Serial.println(key);
 
       if (key == '#') {
@@ -208,7 +188,7 @@ void handleMainPageConfirmation() {
             displayPage2();
             return;
           case 3:
-            displayPage("Page 3");
+            displayPage3();
             return;
         }
       } else if (key == '*') {
@@ -224,16 +204,6 @@ void handleMainPageConfirmation() {
   }
 }
 
-void displayPage(const char* pageTitle) {
-  // Clear the display and show the selected page
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 20);
-  display.println(pageTitle);
-  display.display();
-}
-
 void displayPage1() {
   // Clear the display and set up Page 1 UI
   display.clearDisplay();
@@ -242,27 +212,27 @@ void displayPage1() {
 
   // Draw four text boxes representing the options
   display.setCursor(20, 0);
-  display.println("Choose a volume:");
+  display.println(F("Choose a volume:"));
 
   // Option 1
   display.drawRect(0, 16, 60, 16, SSD1306_WHITE);
   display.setCursor(15, 20);
-  display.println("100ml");
+  display.println(F("100ml"));
 
   // Option 2
   display.drawRect(64, 16, 60, 16, SSD1306_WHITE);
   display.setCursor(79, 20);
-  display.println("200ml");
+  display.println(F("200ml"));
 
   // Option 3
   display.drawRect(0, 36, 60, 16, SSD1306_WHITE);
   display.setCursor(15, 40);
-  display.println("300ml");
+  display.println(F("300ml"));
 
   // Option 4
   display.drawRect(64, 36, 60, 16, SSD1306_WHITE);
   display.setCursor(79, 40);
-  display.println("400ml");
+  display.println(F("400ml"));
 
   display.display(); // Update the display with the new content
 }
@@ -274,7 +244,7 @@ void handlePage1Input() {
     char key = keypad.getKey();
     if (key) {
       // Print the key to the serial monitor
-      Serial.print("Page 1 - Key Pressed: ");
+      Serial.print(F("Page 1 - Key Pressed: "));
       Serial.println(key);
 
       // Clear the display and redraw Page 1 UI with the selected box highlighted
@@ -285,7 +255,7 @@ void handlePage1Input() {
           display.fillRect(0, 16, 60, 16, SSD1306_WHITE);
           display.setTextColor(SSD1306_BLACK);
           display.setCursor(15, 20);
-          display.println("100ml");
+          display.println(F("100ml"));
           display.setTextColor(SSD1306_WHITE);
           display.display();
           break;
@@ -294,7 +264,7 @@ void handlePage1Input() {
           display.fillRect(64, 16, 60, 16, SSD1306_WHITE);
           display.setTextColor(SSD1306_BLACK);
           display.setCursor(79, 20);
-          display.println("200ml");
+          display.println(F("200ml"));
           display.setTextColor(SSD1306_WHITE);
           display.display();
           break;
@@ -303,7 +273,7 @@ void handlePage1Input() {
           display.fillRect(0, 36, 60, 16, SSD1306_WHITE);
           display.setTextColor(SSD1306_BLACK);
           display.setCursor(15, 40);
-          display.println("300ml");
+          display.println(F("300ml"));
           display.setTextColor(SSD1306_WHITE);
           display.display();
           break;
@@ -312,7 +282,7 @@ void handlePage1Input() {
           display.fillRect(64, 36, 60, 16, SSD1306_WHITE);
           display.setTextColor(SSD1306_BLACK);
           display.setCursor(79, 40);
-          display.println("400ml");
+          display.println(F("400ml"));
           display.setTextColor(SSD1306_WHITE);
           display.display();
           break;
@@ -335,17 +305,17 @@ void displayPage2() {
   while (true) {
     // Read the sensor value and convert to voltage
     int sensorValue = analogRead(moistureAnalogPin); // Replace with your analog pin
-    float voltage = (sensorValue / 1023.0) * 5.0;    // Assuming a 5V reference
+    float voltage = (sensorValue / 1023.0) * 5.0;    // 5V reference
 
     // Clear the display and show the sensor voltage
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 0);
-    display.print("Sensor Value:");
+    display.print(F("Sensor Value:"));
     display.setCursor(80, 0);
     display.print(voltage, 2); // Display voltage with 2 decimal points
-    display.print(" V");
+    display.print(F(" V"));
     display.display();
 
     // Check for user input to exit Page 2
@@ -358,7 +328,6 @@ void displayPage2() {
   }
 }
 
-
 // New function to handle the logic when '#' is pressed
 void processSelectedOption() {
   if (selectedOption != 0) {
@@ -367,7 +336,7 @@ void processSelectedOption() {
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 20);
-    display.print("Dispensing ");
+    display.print(F("Dispensing "));
     display.print(selectedOption);
     display.display();
 
@@ -405,11 +374,11 @@ void dispense(int durationSeconds) {
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 20);
-    display.print("Dispensing...");
+    display.print(F("Dispensing..."));
     display.setCursor(0, 40);
-    display.print("Time: ");
+    display.print(F("Time: "));
     display.print(remainingTime);
-    display.print("s");
+    display.print(F("s"));
     display.display();
 
     delay(1000); // Wait for 1 second
@@ -423,8 +392,36 @@ void dispense(int durationSeconds) {
   display.setTextSize(2);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 20);
-  display.print("Completed!");
+  display.print(F("Completed!"));
   display.display();
 
   delay(2000); // Pause for 2 seconds to show the completion message
 }
+
+void displayPage3() {
+  // Display static information about the system
+  display.clearDisplay();
+  display.setTextSize(1); // Smaller text size for more content
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+
+  // Add information about the system
+  display.println(F("Soil Monitoring Sys."));
+  display.println(F("---------------------"));
+  display.println(F("Dry soil harms plant"));
+  display.println(F("Ensure enough water"));
+  display.println(F("to keep it healthy"));
+
+  display.display();
+
+  // Wait for user input to return to the main page
+  while (true) {
+    char key = keypad.getKey();
+    if (key == '*') {
+      // Return to the main page if '*' is pressed
+      displayMainPage();
+      return;
+    }
+  }
+}
+
