@@ -12,14 +12,13 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 // Adafruit_SSD1306 display object created
 extern Adafruit_SSD1306 display;
 
-// Struct to hold clock data
 struct Clock {
-  int hours;
-  int minutes;
-  int seconds;
-  int day;
-  int month;
-  int year;
+  unsigned int hours;
+  unsigned int minutes;
+  unsigned int seconds;
+  unsigned int day;
+  unsigned int month;
+  unsigned int year;
 };
 
 // Keypad matrix configuration
@@ -59,7 +58,7 @@ int seconds = 0;
 
 void setup() {
   // Initialize serial communication
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   // Set up the relay and sensor pins
   pinMode(relayPin, OUTPUT);      // Set relay pin as output
@@ -313,8 +312,10 @@ void handlePage1Input() {
   selectedOption = 0; // Reset selected option
   bool hasSelection = false; // Track if an option is currently selected
 
+  // Wait for user input on Page 1
   while (true) {
-    // Wait for user input on Page 1
+    //Update Clock
+    updateClock();
     char key = keypad.getKey();
     if (key) {
       // Print the key to the serial monitor
@@ -324,6 +325,8 @@ void handlePage1Input() {
       if (key == '#') {
         // Confirm selection and proceed
         if (hasSelection) {
+          // Save the current time to EEPROM when # is pressed
+          saveClockToEEPROM();
           switch (selectedOption) {
             case 1:
               dispense(3); // Dispense 100 ml (~3 seconds)
@@ -338,8 +341,6 @@ void handlePage1Input() {
               handleCustomVolumeInput(); // Call the custom volume input function
               return;
           }
-        // Save the current time to EEPROM when # is pressed
-        saveClockToEEPROM();
         }
       } else if (key == '*') {
         // Handle clearing selection or returning to the main page
@@ -444,10 +445,10 @@ void displayPage3() {
   display.setCursor(0, 0);
 
   display.println(F("Soil Monitoring Sys."));
-  display.setCursor(0, 25);
+  display.setCursor(0, 20);
   display.println(F("Last Manually Pump: "));
 
-  display.setCursor(0,40);
+  display.setCursor(0,30);
   printSavedClock();
 
   display.display();
@@ -605,20 +606,38 @@ void updateClock(){ // Function to update clock time using TIMER
   }
 }
 
-// Function to save the current clock data to EEPROM
 void saveClockToEEPROM() {
   Clock currentClock = {hours, minutes, seconds, day, month, year};
+
+  // Debug: Print data to Serial Monitor before saving
+  Serial.print("Saving Clock Data: ");
+  Serial.print(currentClock.hours); Serial.print(", ");
+  Serial.print(currentClock.minutes); Serial.print(", ");
+  Serial.print(currentClock.seconds); Serial.print(", ");
+  Serial.print(currentClock.day); Serial.print(", ");
+  Serial.print(currentClock.month); Serial.print(", ");
+  Serial.println(currentClock.year);
+
   EEPROM.put(0, currentClock);
 }
 
-// Function to print the saved clock data on the OLED display
+
 void printSavedClock() {
   Clock savedClock;
   EEPROM.get(0, savedClock);
+
+  // Debug: Print retrieved data to Serial Monitor
+  Serial.print("Retrieved Clock Data: ");
+  Serial.print(savedClock.hours); Serial.print(", ");
+  Serial.print(savedClock.minutes); Serial.print(", ");
+  Serial.print(savedClock.seconds); Serial.print(", ");
+  Serial.print(savedClock.day); Serial.print(", ");
+  Serial.print(savedClock.month); Serial.print(", ");
+  Serial.println(savedClock.year);
+
   display.setTextSize(1);
 
-  // Check if the EEPROM data is valid before displaying
-  if (savedClock.year > 2000) {
+  if (savedClock.year > 2000) { // Validate year as a simple check for valid data
     display.print(F("Time: "));
     display.print((savedClock.hours < 10) ? "0" : "");
     display.print(savedClock.hours);
