@@ -438,10 +438,12 @@ void handleCustomVolumeInput() {
     char key = keypad.getKey();
     if (key) {
       if (key >= '0' && key <= '9') {
-        // Append the digit and check for 5-digit number
-        customVolume = customVolume * 10 + (key - '0');
-        if (customVolume > 9999) {
-          // Reset to 0 if it becomes a 5-digit number
+        int digit = key - '0';
+        // Only append the digit if the current number has fewer than 4 digits
+        if (customVolume < 1000) { // Less than 4 digits
+          customVolume = customVolume * 10 + digit;
+        } else {
+          // If it would exceed 4 digits, reset to 0
           customVolume = 0;
         }
       } else if (key == '*') {
@@ -459,6 +461,10 @@ void handleCustomVolumeInput() {
         // Confirm input
         isConfirmed = true;
       }
+
+      // Debugging log for monitoring customVolume
+      Serial.print(F("Current customVolume: "));
+      Serial.println(customVolume);
     }
   }
 
@@ -470,5 +476,3 @@ void handleCustomVolumeInput() {
   // Call the dispensing function with calculated time
   dispense(dispensingTime);
 }
-
-
