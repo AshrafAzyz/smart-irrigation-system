@@ -229,10 +229,10 @@ void displayPage1() {
   display.setCursor(15, 40);
   display.println(F("300ml"));
 
-  // Option 4
+  // Option 4 (Custom)
   display.drawRect(64, 36, 60, 16, SSD1306_WHITE);
-  display.setCursor(79, 40);
-  display.println(F("400ml"));
+  display.setCursor(75, 40);
+  display.println(F("Custom"));
 
   display.display(); // Update the display with the new content
 }
@@ -277,19 +277,19 @@ void handlePage1Input() {
           display.setTextColor(SSD1306_WHITE);
           display.display();
           break;
-        case '4':
+        case '4': // Custom volume
           selectedOption = 4;
           display.fillRect(64, 36, 60, 16, SSD1306_WHITE);
           display.setTextColor(SSD1306_BLACK);
-          display.setCursor(79, 40);
-          display.println(F("400ml"));
+          display.setCursor(75, 40);
+          display.println(F("Custom"));
           display.setTextColor(SSD1306_WHITE);
           display.display();
-          break;
+          //handleCustomVolumeInput(); // Call the new function
+          return;
         case '#':
-          processSelectedOption(); // Call the new function
-            return;
-          break;
+          processSelectedOption(); // Call the function to process selected option
+          return;
         case '*':
           // Return to main page
           displayMainPage();
@@ -300,6 +300,7 @@ void handlePage1Input() {
     }
   }
 }
+
 
 void displayPage2() {
   while (true) {
@@ -337,7 +338,11 @@ void processSelectedOption() {
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 20);
     display.print(F("Dispensing "));
-    display.print(selectedOption);
+    if (selectedOption == 4) {
+      display.print(F("Custom"));
+    } else {
+      display.print(selectedOption);
+    }
     display.display();
 
     // Dispense based on the selected option
@@ -351,9 +356,6 @@ void processSelectedOption() {
       case 3:
         dispense(9); // Dispense 300 ml (~9 seconds)
         break;
-      case 4:
-        dispense(12); // Dispense 400 ml (~12 seconds)
-        break;
       default:
         break;
     }
@@ -362,6 +364,7 @@ void processSelectedOption() {
     displayMainPage(); // Return to the main page after dispensing
   }
 }
+
 
 // Function to handle dispensing with a countdown
 void dispense(int durationSeconds) {
@@ -425,3 +428,46 @@ void displayPage3() {
   }
 }
 
+void handleCustomVolumeInput() {
+  int customVolume = 0; // Variable to store user input
+  bool isConfirmed = false;
+
+  while (!isConfirmed) {
+    // Clear the display and prompt user for input
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println(F("Enter volume (ml):"));
+    display.setCursor(0, 20);
+    display.print(F("Current: "));
+    display.print(customVolume);
+    display.println(F(" ml"));
+    display.setCursor(0, 40);
+    display.println(F("# to confirm, * to cancel"));
+    display.display();
+
+    char key = keypad.getKey();
+    if (key) {
+      if (key >= '0' && key <= '9') {
+        // Append digit to custom volume
+        customVolume = customVolume * 10 + (key - '0');
+      } else if (key == '*') {
+        // Cancel input and return to Page 1
+        displayPage1();
+        return;
+      } else if (key == '#') {
+        // Confirm input
+        isConfirmed = true;
+      }
+    }
+  }
+
+  // Calculate dispensing time based on the pump's flow rate
+  // Pump flow rate: 120 L/H = 120,000 ml/hour = 120,000 / 3600 ml/second
+  const float flowRatePerSecond = 120000.0 / 3600.0; // ~33.33 ml/second
+  int dispensingTime = customVolume / flowRatePerSecond; // Time in seconds
+
+  // Call the dispensing function with calculated time
+  dispense(dispensingTime);
+}
