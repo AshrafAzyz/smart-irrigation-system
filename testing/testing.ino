@@ -57,8 +57,8 @@ void setup() {
   displayMainPage();
 }
 
-void loop() {
 
+void loop() {
   // Wait until a key is pressed
   char key = keypad.getKey();
   if (key) {
@@ -101,6 +101,7 @@ void loop() {
   }
 }
 
+
 void displayMainPage() {
   // Clear the display and set up the main page UI
   display.clearDisplay();
@@ -138,6 +139,7 @@ void displayMainPage() {
   display.display(); // Update the display with the new content
 }
 
+
 void highlightMainOption(int option) {
   displayMainPage(); // Clear any previous highlights
   int boxY = 30;
@@ -167,6 +169,7 @@ void highlightMainOption(int option) {
   display.setTextColor(SSD1306_WHITE);
   display.display();
 }
+
 
 void handleMainPageConfirmation() {
   while (true) {
@@ -204,6 +207,7 @@ void handleMainPageConfirmation() {
   }
 }
 
+
 void displayPage1() {
   // Clear the display and set up Page 1 UI
   display.clearDisplay();
@@ -237,8 +241,11 @@ void displayPage1() {
   display.display(); // Update the display with the new content
 }
 
+
 void handlePage1Input() {
   selectedOption = 0; // Reset selected option
+  bool hasSelection = false; // Track if an option is currently selected
+
   while (true) {
     // Wait for user input on Page 1
     char key = keypad.getKey();
@@ -247,59 +254,78 @@ void handlePage1Input() {
       Serial.print(F("Page 1 - Key Pressed: "));
       Serial.println(key);
 
-      // Clear the display and redraw Page 1 UI with the selected box highlighted
-      displayPage1();
-      switch (key) {
-        case '1':
-          selectedOption = 1;
-          display.fillRect(0, 16, 60, 16, SSD1306_WHITE);
-          display.setTextColor(SSD1306_BLACK);
-          display.setCursor(15, 20);
-          display.println(F("100ml"));
-          display.setTextColor(SSD1306_WHITE);
-          display.display();
-          break;
-        case '2':
-          selectedOption = 2;
-          display.fillRect(64, 16, 60, 16, SSD1306_WHITE);
-          display.setTextColor(SSD1306_BLACK);
-          display.setCursor(79, 20);
-          display.println(F("200ml"));
-          display.setTextColor(SSD1306_WHITE);
-          display.display();
-          break;
-        case '3':
-          selectedOption = 3;
-          display.fillRect(0, 36, 60, 16, SSD1306_WHITE);
-          display.setTextColor(SSD1306_BLACK);
-          display.setCursor(15, 40);
-          display.println(F("300ml"));
-          display.setTextColor(SSD1306_WHITE);
-          display.display();
-          break;
-        case '4': // Custom volume
-          selectedOption = 4;
-          display.fillRect(64, 36, 60, 16, SSD1306_WHITE);
-          display.setTextColor(SSD1306_BLACK);
-          display.setCursor(75, 40);
-          display.println(F("Custom"));
-          display.setTextColor(SSD1306_WHITE);
-          display.display();
-          //handleCustomVolumeInput(); // Call the new function
-          return;
-        case '#':
-          processSelectedOption(); // Call the function to process selected option
-          return;
-        case '*':
-          // Return to main page
+      if (key == '#') {
+        // Confirm selection and proceed
+        if (hasSelection) {
+          switch (selectedOption) {
+            case 1:
+              dispense(3); // Dispense 100 ml (~3 seconds)
+              return;
+            case 2:
+              dispense(6); // Dispense 200 ml (~6 seconds)
+              return;
+            case 3:
+              dispense(9); // Dispense 300 ml (~9 seconds)
+              return;
+            case 4:
+              handleCustomVolumeInput(); // Call the custom volume input function
+              return;
+          }
+        }
+      } else if (key == '*') {
+        // Handle clearing selection or returning to the main page
+        if (hasSelection) {
+          // Clear selection and refresh the page
+          hasSelection = false;
+          selectedOption = 0;
+          displayPage1(); // Redraw the Page 1 UI without any selection
+        } else {
+          // If no selection, return to the main page
           displayMainPage();
           return;
-        default:
-          break;
+        }
+      } else if (key >= '1' && key <= '4') {
+        // Allow changing selection without leaving the page
+        selectedOption = key - '0';
+        hasSelection = true; // Mark that an option is selected
+        displayPage1(); // Refresh UI
+        switch (selectedOption) {
+          case 1:
+            display.fillRect(0, 16, 60, 16, SSD1306_WHITE);
+            display.setTextColor(SSD1306_BLACK);
+            display.setCursor(15, 20);
+            display.println(F("100ml"));
+            display.setTextColor(SSD1306_WHITE);
+            break;
+          case 2:
+            display.fillRect(64, 16, 60, 16, SSD1306_WHITE);
+            display.setTextColor(SSD1306_BLACK);
+            display.setCursor(79, 20);
+            display.println(F("200ml"));
+            display.setTextColor(SSD1306_WHITE);
+            break;
+          case 3:
+            display.fillRect(0, 36, 60, 16, SSD1306_WHITE);
+            display.setTextColor(SSD1306_BLACK);
+            display.setCursor(15, 40);
+            display.println(F("300ml"));
+            display.setTextColor(SSD1306_WHITE);
+            break;
+          case 4:
+            display.fillRect(64, 36, 60, 16, SSD1306_WHITE);
+            display.setTextColor(SSD1306_BLACK);
+            display.setCursor(75, 40);
+            display.println(F("Custom"));
+            display.setTextColor(SSD1306_WHITE);
+            break;
+        }
+        display.display(); // Update the display
       }
     }
   }
 }
+
+
 
 
 void displayPage2() {
@@ -329,6 +355,7 @@ void displayPage2() {
   }
 }
 
+/*
 // New function to handle the logic when '#' is pressed
 void processSelectedOption() {
   if (selectedOption != 0) {
@@ -364,7 +391,7 @@ void processSelectedOption() {
     displayMainPage(); // Return to the main page after dispensing
   }
 }
-
+*/
 
 // Function to handle dispensing with a countdown
 void dispense(int durationSeconds) {
@@ -399,6 +426,7 @@ void dispense(int durationSeconds) {
   display.display();
 
   delay(2000); // Pause for 2 seconds to show the completion message
+  displayMainPage();
 }
 
 void displayPage3() {
@@ -455,6 +483,7 @@ void handleCustomVolumeInput() {
       } else if (key == '*') {
         // Cancel input and return to Page 1
         displayPage1();
+        handlePage1Input();
         return;
       } else if (key == '#') {
         // Confirm input
